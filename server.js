@@ -410,6 +410,48 @@ Keep strengths/improvements/example concise and conversational — they will be 
   }
 });
 
+// ─── Text-to-speech via ElevenLabs (natural voice) ────────────────────────────
+// Default voice: "Rachel" (calm, professional). Override with ELEVENLABS_VOICE_ID.
+const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM';
+
+app.post('/api/tts', async (req, res) => {
+  const { text } = req.body;
+  if (!process.env.ELEVENLABS_API_KEY) {
+    return res.status(503).json({ error: 'TTS not configured' });
+  }
+  if (!text || !text.trim()) {
+    return res.status(400).json({ error: 'No text' });
+  }
+  try {
+    const r = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`,
+      {
+        method: 'POST',
+        headers: {
+          'xi-api-key': process.env.ELEVENLABS_API_KEY,
+          'Content-Type': 'application/json',
+          Accept: 'audio/mpeg',
+        },
+        body: JSON.stringify({
+          text: text.slice(0, 2500),
+          // turbo v2.5 is fast and supports many languages (incl. Chinese)
+          model_id: 'eleven_turbo_v2_5',
+          voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+        }),
+      }
+    );
+    if (!r.ok) {
+      const detail = await r.text().catch(() => '');
+      return res.status(r.status).json({ error: 'TTS failed', detail });
+    }
+    const audio = Buffer.from(await r.arrayBuffer());
+    res.set('Content-Type', 'audio/mpeg');
+    res.send(audio);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Serve the built frontend whenever a production build exists (dist/).
 // Not gated on NODE_ENV so it works on any host (e.g. Render) regardless of env config.
 const distDir = join(__dirname, 'dist');
