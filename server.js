@@ -1,6 +1,7 @@
 import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { existsSync } from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: join(__dirname, '.env'), override: true });
@@ -409,9 +410,12 @@ Keep strengths/improvements/example concise and conversational — they will be 
   }
 });
 
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(join(__dirname, 'dist')));
-  app.get('*', (_, res) => res.sendFile(join(__dirname, 'dist', 'index.html')));
+// Serve the built frontend whenever a production build exists (dist/).
+// Not gated on NODE_ENV so it works on any host (e.g. Render) regardless of env config.
+const distDir = join(__dirname, 'dist');
+if (existsSync(distDir)) {
+  app.use(express.static(distDir));
+  app.get('*', (_, res) => res.sendFile(join(distDir, 'index.html')));
 }
 
 const PORT = process.env.PORT ?? 3001;
