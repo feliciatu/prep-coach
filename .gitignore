@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+*.local
+
+# Editor / local tooling
+.claude/settings.local.json
+
+# Misc / unrelated
+cd
+dancing-stickman.html
+.DS_Store
